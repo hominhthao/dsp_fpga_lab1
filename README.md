@@ -46,11 +46,11 @@ Mỗi thành viên phụ trách một khối công việc cụ thể. Hãy đả
   - Thiết kế bộ tạo số ngẫu nhiên giả LFSR (Linear Feedback Shift Register) để làm nguồn nhiễu.
   - Thiết kế bộ cộng/trộn tín hiệu (Mixer/Adder) để cộng nhiễu vào sóng gốc.
   - Viết Testbench mô phỏng kiểm tra sóng và nhiễu, chụp ảnh Waveform minh chứng.
+  - Thiết kế khối Debounce (chống dội) cho phím bấm/switch vật lý trên kit.
 
 ### 🔴 Thành viên 3: Hardware Interface & System Integration (Phần cứng & Tích hợp)
 - Thư mục làm việc: rtl/common/, quartus/ và tb/
 - Nhiệm vụ:
-  - Thiết kế khối Debounce (chống dội) cho phím bấm/switch vật lý trên kit.
   - Trích xuất và cấu hình khối Driver giao tiếp WM8731 Audio CODEC từ repo chính của môn học (xuất data 24-bit ra cổng Line-Out/Headphone).
   - Viết file top.v kết nối tất cả các khối từ Thành viên 1 và Thành viên 2 thành hệ thống hoàn chỉnh.
   - Khởi tạo project Quartus Prime, gán chân (Pin assignments) cho DE10-Standard, chạy Tổng hợp mạch (Synthesis) và biên dịch ra file nạp (.sof).
