@@ -56,7 +56,7 @@ Mỗi thành viên phụ trách một khối công việc cụ thể. Hãy đả
   - Khởi tạo project Quartus Prime, gán chân (Pin assignments) cho DE10-Standard, chạy Tổng hợp mạch (Synthesis) và biên dịch ra file nạp (.sof)[cite: 1].
   - Trích xuất báo cáo tài nguyên (Utilization), tần số tối đa (fmax) và kiểm tra lỗi timing gửi cho Leader[cite: 1].
 
-### 🟢 Leader (Hồ Minh Thảo): Project Management & QA Report
+### 🟢 Leader: Project Management & QA Report
 - Nhiệm vụ:
   - Quản lý tiến độ dự án, thiết lập giao thức I/O chuẩn cho 3 thành viên kỹ thuật.
   - Kiểm duyệt chất lượng code, đối chiếu kết quả mô phỏng Waveform của TV1, TV2 và báo cáo tổng hợp Quartus của TV3[cite: 1].
