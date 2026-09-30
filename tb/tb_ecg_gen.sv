@@ -545,16 +545,28 @@ endtask
     logic [3:0] KEY;
     logic rst_top;
     logic sample_en_top;
+    logic [31:0] phase_inc_out_top;
+    logic [7:0] amp_ctrl_out_top;
     logic signed [23:0] ecg_data_out_top;
 
+    // Truyen tham so tuong minh: TB dung phase_inc lon (512 mau/chu ky)
+    // de rut ngan thoi gian mo phong; logic step/clamp giong het cau hinh final.
     ecg_gen_top #(
-        .DEBOUNCE_CNT(SIM_DEBOUNCE)
+        .PHASE_INC_DEFAULT (PHASE_INC_DEFAULT),
+        .PHASE_INC_STEP    (PHASE_INC_STEP),
+        .PHASE_INC_MIN     (PHASE_INC_MIN),
+        .PHASE_INC_MAX     (PHASE_INC_MAX),
+        .AMP_DEFAULT       (AMP_DEFAULT),
+        .AMP_STEP          (AMP_STEP),
+        .DEBOUNCE_CNT      (SIM_DEBOUNCE)
     ) DUT (
-        .CLOCK_50     (clk),
-        .KEY          (KEY),
-        .rst_n          (rst_top),
-        .sample_en    (sample_en_top),
-        .ecg_data_out (ecg_data_out_top)
+        .CLOCK_50      (clk),
+        .KEY           (KEY),
+        .rst_n         (rst_top),
+        .sample_en     (sample_en_top),
+        .phase_inc_out (phase_inc_out_top),
+        .amp_ctrl_out  (amp_ctrl_out_top),
+        .ecg_data_out  (ecg_data_out_top)
     );
 
 
@@ -569,15 +581,15 @@ endtask
             repeat (2) @(negedge clk);
 
             report_check(
-                (DUT.u_freq_ctrl.phase_inc === PHASE_INC_DEFAULT) &&
-                (DUT.u_amp_ctrl.amp_ctrl === AMP_DEFAULT),
+                (phase_inc_out_top === PHASE_INC_DEFAULT) &&
+                (amp_ctrl_out_top === AMP_DEFAULT),
                 "TOP / reset default",
                 $sformatf("phase_inc=%0d amp=%0d",
-                          DUT.u_freq_ctrl.phase_inc,
-                          DUT.u_amp_ctrl.amp_ctrl),
+                          phase_inc_out_top,
+                          amp_ctrl_out_top),
                 $sformatf("phase_inc=%0d amp=%0d, expected %0d/%0d",
-                          DUT.u_freq_ctrl.phase_inc,
-                          DUT.u_amp_ctrl.amp_ctrl,
+                          phase_inc_out_top,
+                          amp_ctrl_out_top,
                           PHASE_INC_DEFAULT, AMP_DEFAULT)
             );
         end
@@ -636,29 +648,29 @@ endtask
             $display("============================================================");
             $display("CASE C11: freq_up / freq_down");
 
-            before_val = DUT.u_freq_ctrl.phase_inc;
+            before_val = phase_inc_out_top;
             press_key(0);
 
             report_check(
-                DUT.u_freq_ctrl.phase_inc === before_val + PHASE_INC_STEP,
+                phase_inc_out_top === before_val + PHASE_INC_STEP,
                 "C11 / freq_up one step",
                 $sformatf("%0d -> %0d", before_val,
-                          DUT.u_freq_ctrl.phase_inc),
+                          phase_inc_out_top),
                 $sformatf("actual=%0d expected=%0d",
-                          DUT.u_freq_ctrl.phase_inc,
+                          phase_inc_out_top,
                           before_val + PHASE_INC_STEP)
             );
 
-            before_val = DUT.u_freq_ctrl.phase_inc;
+            before_val = phase_inc_out_top;
             press_key(1);
 
             report_check(
-                DUT.u_freq_ctrl.phase_inc === before_val - PHASE_INC_STEP,
+                phase_inc_out_top === before_val - PHASE_INC_STEP,
                 "C11 / freq_down one step",
                 $sformatf("%0d -> %0d", before_val,
-                          DUT.u_freq_ctrl.phase_inc),
+                          phase_inc_out_top),
                 $sformatf("actual=%0d expected=%0d",
-                          DUT.u_freq_ctrl.phase_inc,
+                          phase_inc_out_top,
                           before_val - PHASE_INC_STEP)
             );
 
@@ -669,20 +681,20 @@ endtask
                 press_key(0);
 
             report_check(
-                DUT.u_freq_ctrl.phase_inc === PHASE_INC_MAX,
+                phase_inc_out_top === PHASE_INC_MAX,
                 "C11 / freq MAX clamp",
-                $sformatf("phase_inc=%0d", DUT.u_freq_ctrl.phase_inc),
+                $sformatf("phase_inc=%0d", phase_inc_out_top),
                 $sformatf("actual=%0d expected MAX=%0d",
-                          DUT.u_freq_ctrl.phase_inc, PHASE_INC_MAX)
+                          phase_inc_out_top, PHASE_INC_MAX)
             );
 
             press_key(0);
 
             report_check(
-                DUT.u_freq_ctrl.phase_inc === PHASE_INC_MAX,
+                phase_inc_out_top === PHASE_INC_MAX,
                 "C11 / freq khong wrap tren MAX",
                 "van giu MAX",
-                $sformatf("actual=%0d", DUT.u_freq_ctrl.phase_inc)
+                $sformatf("actual=%0d", phase_inc_out_top)
             );
         end
     endtask
@@ -702,23 +714,23 @@ endtask
             press_key(2);
 
             report_check(
-                DUT.u_amp_ctrl.amp_ctrl === AMP_DEFAULT + AMP_STEP,
+                amp_ctrl_out_top === AMP_DEFAULT + AMP_STEP,
                 "C14 / amp_up one step",
                 $sformatf("%0d -> %0d", AMP_DEFAULT,
-                          DUT.u_amp_ctrl.amp_ctrl),
+                          amp_ctrl_out_top),
                 $sformatf("actual=%0d expected=%0d",
-                          DUT.u_amp_ctrl.amp_ctrl,
+                          amp_ctrl_out_top,
                           AMP_DEFAULT + AMP_STEP)
             );
 
             press_key(3);
 
             report_check(
-                DUT.u_amp_ctrl.amp_ctrl === AMP_DEFAULT,
+                amp_ctrl_out_top === AMP_DEFAULT,
                 "C14 / amp_down one step",
-                $sformatf("ve lai %0d", DUT.u_amp_ctrl.amp_ctrl),
+                $sformatf("ve lai %0d", amp_ctrl_out_top),
                 $sformatf("actual=%0d expected=%0d",
-                          DUT.u_amp_ctrl.amp_ctrl, AMP_DEFAULT)
+                          amp_ctrl_out_top, AMP_DEFAULT)
             );
 
             // 128 / 16 = 8 lan ve 0.
@@ -726,19 +738,19 @@ endtask
                 press_key(3);
 
             report_check(
-                DUT.u_amp_ctrl.amp_ctrl === 8'd0,
+                amp_ctrl_out_top === 8'd0,
                 "C14 / amp MIN clamp",
                 "amp_ctrl=0",
-                $sformatf("actual=%0d", DUT.u_amp_ctrl.amp_ctrl)
+                $sformatf("actual=%0d", amp_ctrl_out_top)
             );
 
             press_key(3);
 
             report_check(
-                DUT.u_amp_ctrl.amp_ctrl === 8'd0,
+                amp_ctrl_out_top === 8'd0,
                 "C14 / amp khong wrap duoi 0",
                 "van giu 0",
-                $sformatf("actual=%0d", DUT.u_amp_ctrl.amp_ctrl)
+                $sformatf("actual=%0d", amp_ctrl_out_top)
             );
         end
     endtask

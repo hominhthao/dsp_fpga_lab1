@@ -178,6 +178,17 @@ module tb_lab1_signal_core;
         wave_sel = 3'b100; #1;
         check(clean_wave===ecg_wave,"MUX chon dung ECG");
 
+        // Kiem tra anh xa SW[9:8] -> duty song vuong.
+        duty_sel = 2'b00; #1;
+        check(dut.duty_q8==9'd64,  "duty_sel=00 -> duty 25% (64/256)");
+        duty_sel = 2'b01; #1;
+        check(dut.duty_q8==9'd128, "duty_sel=01 -> duty 50% (128/256)");
+        duty_sel = 2'b10; #1;
+        check(dut.duty_q8==9'd192, "duty_sel=10 -> duty 75% (192/256)");
+        duty_sel = 2'b11; #1;
+        check(dut.duty_q8==9'd230, "duty_sel=11 -> duty 90% (230/256), khong con 100% (DC)");
+        duty_sel = 2'b01; #1;
+
         // Kiem tra tat va chen noise.
         wave_sel = 3'b001;
         noise_enable = 0; #1;

@@ -1,6 +1,31 @@
 transcript on
 
-set project_root "F:/DSPFPGA_LAB1/dsp_fpga_lab1"
+# Tu dong xac dinh thu muc goc project (khong dung duong dan tuyet doi).
+# Uu tien vi tri cua chinh file .do nay (tb/run_all_questa.do -> ..),
+# neu khong lay duoc thi thu thu muc hien tai va thu muc cha.
+set project_root ""
+set candidates {}
+set this_script [info script]
+if {$this_script ne ""} {
+    lappend candidates [file normalize [file join [file dirname [file normalize $this_script]] ..]]
+}
+lappend candidates [file normalize [pwd]]
+lappend candidates [file normalize [file join [pwd] ..]]
+
+foreach c $candidates {
+    if {[file exists [file join $c rtl core sine_gen.v]]} {
+        set project_root $c
+        break
+    }
+}
+
+if {$project_root eq ""} {
+    puts "LOI: Khong tim thay thu muc goc project."
+    puts "Hay cd vao thu muc dsp_fpga_lab1 roi chay: do tb/run_all_questa.do"
+    return
+}
+
+puts "Project root: $project_root"
 set sim_dir "$project_root/quartus"
 
 if {![file exists "$project_root/rtl/core/sine_gen.v"]} {
@@ -47,6 +72,8 @@ puts ""
 puts "BIEN DICH RTL"
 
 # Bien dich code TV1, TV2 va cac khoi tich hop
+# Luu y: tb/audio_pll_sim.v la mo hinh PLL chi dung de mo phong top-level,
+# thay cho rtl/common/audio_pll.v (altera_pll). Khong them file nay vao Quartus.
 if {[catch {
 
     vlog -sv \
@@ -67,7 +94,11 @@ if {[catch {
         "$project_root/rtl/common/toggle_sync_pulse.sv" \
         "$project_root/rtl/common/sync_bus_2ff.sv" \
         "$project_root/rtl/common/lab1_signal_core.sv" \
-        "$project_root/rtl/common/wm8731_i2s_tx.sv"
+        "$project_root/rtl/common/wm8731_i2s_tx.sv" \
+        "$project_root/rtl/common/i2c_master_write.sv" \
+        "$project_root/rtl/common/wm8731_config.sv" \
+        "$project_root/rtl/common/top.v" \
+        "$project_root/tb/audio_pll_sim.v"
 
 } result]} {
 
@@ -91,6 +122,9 @@ set tests {
     {tb_debounce         tb_debounce.sv}
     {tb_lab1_signal_core tb_lab1_signal_core.sv}
     {tb_wm8731_i2s_tx    tb_wm8731_i2s_tx.sv}
+    {tb_wm8731_i2s_data  tb_wm8731_i2s_data.sv}
+    {tb_wm8731_config    tb_wm8731_config.sv}
+    {tb_lab1_top         tb_lab1_top.sv}
 }
 
 foreach item $tests {
