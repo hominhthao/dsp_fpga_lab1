@@ -15,27 +15,13 @@ module lfsr_noise #(
     reg [23:0] lfsr_state;
     reg [15:0] sample_count;
 
-    // Moi lan cap nhat, LFSR dich STEPS_PER_UPDATE = 24 buoc (leap-forward).
-    // Dich 24 buoc thay toan bo 24 bit -> hai mau lien tiep khong con chung bit,
-    // nhieu gan "trang" (tu tuong quan lag-1 ~ 0 thay vi ~ -0.25 khi dich 1 buoc).
-    // Mach to hop XOR (khong them chu ky); chu ky lap = (2^24 - 1)/3 mau (~116 s @ 48 kHz).
-    localparam integer STEPS_PER_UPDATE = 24;
-
-    function automatic [23:0] lfsr_leap;
-        input [23:0] s;
-        integer k;
-        reg [23:0] t;
-        begin
-            t = s;
-            for (k = 0; k < STEPS_PER_UPDATE; k = k + 1)
-                t = {t[22:0], t[23] ^ t[22] ^ t[21] ^ t[16]};  // x^24+x^23+x^22+x^17+1
-            lfsr_leap = t;
-        end
-    endfunction
-
+    wire feedback;
     reg signed [23:0] noise_fullscale;
     reg signed [33:0] scaled_product;
     reg signed [23:0] scaled_noise;
+
+    assign feedback = lfsr_state[23] ^ lfsr_state[22] ^
+                      lfsr_state[21] ^ lfsr_state[16];
 
     always @(*) begin
         noise_fullscale = $signed(lfsr_state);
@@ -55,11 +41,11 @@ module lfsr_noise #(
             noise_out <= scaled_noise;
 
             if (update_div_samples <= 16'd1) begin
-                lfsr_state   <= lfsr_leap(lfsr_state);
+                lfsr_state   <= {lfsr_state[22:0], feedback};
                 sample_count <= 16'd0;
             end
             else if (sample_count >= update_div_samples - 16'd1) begin
-                lfsr_state   <= lfsr_leap(lfsr_state);
+                lfsr_state   <= {lfsr_state[22:0], feedback};
                 sample_count <= 16'd0;
             end
             else begin

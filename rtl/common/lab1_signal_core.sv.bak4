@@ -96,15 +96,12 @@ module lab1_signal_core #(
 
     assign amp_q8 = {1'b0, wave_amp_ctrl};
 
-    // SW[9:8] chon duty song vuong: 25%, 50%, 75%, 90%.
-    // Khong dung 100%: 100% la muc DC, qua tu ghep AC o Line-Out se thanh 0 V.
-    // 230/256 = 89.8%.
     always @(*) begin
         case (duty_sel)
             2'b00: duty_q8 = 9'd64;
             2'b01: duty_q8 = 9'd128;
             2'b10: duty_q8 = 9'd192;
-            default: duty_q8 = 9'd230;
+            default: duty_q8 = 9'd256;
         endcase
     end
 
