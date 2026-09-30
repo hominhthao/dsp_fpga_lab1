@@ -1,0 +1,114 @@
+set_global_assignment -name FAMILY "Cyclone V"
+set_global_assignment -name DEVICE 5CSXFC6D6F31C6
+set_global_assignment -name TOP_LEVEL_ENTITY lab1_top
+set_global_assignment -name SDC_FILE Lab1_DE10_Standard.sdc
+set_global_assignment -name SEARCH_PATH ../rtl/core
+set_global_assignment -name SEARCH_PATH ../rtl/common
+
+# TV1
+set_global_assignment -name VERILOG_FILE ../rtl/core/button_pulse.v
+set_global_assignment -name VERILOG_FILE ../rtl/core/freq_ctrl.v
+set_global_assignment -name VERILOG_FILE ../rtl/core/amp_ctrl.v
+set_global_assignment -name VERILOG_FILE ../rtl/core/amp_scaler.v
+set_global_assignment -name VERILOG_FILE ../rtl/core/sine_gen.v
+set_global_assignment -name VERILOG_FILE ../rtl/core/ecg_gen.v
+set_global_assignment -name VERILOG_FILE ../rtl/core/sine_gen_top.v
+set_global_assignment -name VERILOG_FILE ../rtl/core/ecg_gen_top.v
+
+# TV2
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/basic/square_gen.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/basic/triangle_gen.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/basic/sawtooth_gen.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/common/lfsr_noise.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/common/noise_mixer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/common/debounce.sv
+
+# TV3
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/common/sync_bus_2ff.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/common/toggle_sync_pulse.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/common/lab1_signal_core.sv
+set_global_assignment -name VERILOG_FILE ../rtl/common/audio_pll.v
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/common/wm8731_i2s_tx.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/common/i2c_master_write.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/common/wm8731_config.sv
+set_global_assignment -name VERILOG_FILE ../rtl/common/top.v
+
+# CLOCK_50
+set_location_assignment PIN_AF14 -to CLOCK_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK_50
+
+# Audio CODEC
+set_location_assignment PIN_AF30 -to AUD_BCLK
+set_location_assignment PIN_AF29 -to AUD_DACDAT
+set_location_assignment PIN_AG30 -to AUD_DACLRCK
+set_location_assignment PIN_AH30 -to AUD_XCK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUD_BCLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUD_DACDAT
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUD_DACLRCK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUD_XCK
+
+# I2C cau hinh WM8731
+set_location_assignment PIN_Y24 -to FPGA_I2C_SCLK
+set_location_assignment PIN_Y23 -to FPGA_I2C_SDAT
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_I2C_SCLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_I2C_SDAT
+
+# Phim bam
+set_location_assignment PIN_AJ4 -to KEY[0]
+set_location_assignment PIN_AK4 -to KEY[1]
+set_location_assignment PIN_AA14 -to KEY[2]
+set_location_assignment PIN_AA15 -to KEY[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[3]
+
+# Cong tac
+set_location_assignment PIN_AB30 -to SW[0]
+set_location_assignment PIN_Y27 -to SW[1]
+set_location_assignment PIN_AB28 -to SW[2]
+set_location_assignment PIN_AC30 -to SW[3]
+set_location_assignment PIN_W25 -to SW[4]
+set_location_assignment PIN_V25 -to SW[5]
+set_location_assignment PIN_AC28 -to SW[6]
+set_location_assignment PIN_AD30 -to SW[7]
+set_location_assignment PIN_AC29 -to SW[8]
+set_location_assignment PIN_AA30 -to SW[9]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[0]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[1]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[2]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[3]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[4]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[5]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[6]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[7]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[8]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to SW[9]
+
+# LED do
+set_location_assignment PIN_AA24 -to LEDR[0]
+set_location_assignment PIN_AB23 -to LEDR[1]
+set_location_assignment PIN_AC23 -to LEDR[2]
+set_location_assignment PIN_AD24 -to LEDR[3]
+set_location_assignment PIN_AG25 -to LEDR[4]
+set_location_assignment PIN_AF25 -to LEDR[5]
+set_location_assignment PIN_AE24 -to LEDR[6]
+set_location_assignment PIN_AF24 -to LEDR[7]
+set_location_assignment PIN_AB22 -to LEDR[8]
+set_location_assignment PIN_AC22 -to LEDR[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[9]
+
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
