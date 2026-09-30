@@ -1,18 +1,23 @@
 module sine_gen_top #(
-    parameter [31:0] PHASE_INC_DEFAULT = 32'd8_388_608,
-    parameter [31:0] PHASE_INC_STEP    = 32'd8_388_608,
-    parameter [31:0] PHASE_INC_MIN     = 32'd8_388_608,
-    parameter [31:0] PHASE_INC_MAX     = 32'd134_217_728,
-    parameter [7:0]  AMP_DEFAULT       = 8'd128,
+    // Mac dinh = cau hinh final, fs = 48 kHz
+    // phase_inc = round(2^32 * f / 48000)
+    parameter [31:0] PHASE_INC_DEFAULT = 32'd89_478_485,   // 1 kHz
+    parameter [31:0] PHASE_INC_STEP    = 32'd89_478_485,   // +/- 1 kHz moi lan nhan
+    parameter [31:0] PHASE_INC_MIN     = 32'd89_478_485,   // 1 kHz
+    parameter [31:0] PHASE_INC_MAX     = 32'd894_784_850,  // 10 kHz (= 10 x STEP)
+    parameter [7:0]  AMP_DEFAULT       = 8'd128,           // 50% full-scale
     parameter [7:0]  AMP_STEP          = 8'd16,
-    parameter integer DEBOUNCE_CNT     = 1_000_000
+    parameter integer DEBOUNCE_CNT     = 1_000_000         // 20 ms @ 50 MHz
 )(
-    input  wire         CLOCK_50,      // clk hệ thống 50MHz, từ pin có sẵn trong qsf
-    input  wire  [3:0]  KEY,           // KEY[0]=freq_up, KEY[1]=freq_down,
-    input  wire         rst_n,         // KEY[2]=amp_up, KEY[3]=amp_down (active-low)
-    input  wire         sample_en,     // xung cho phép cập nhật mẫu, dùng chung với Audio CODEC
-    output wire [31:0]  phase_inc_out,
-    output wire [7:0]   amp_ctrl_out,
+    input  wire         CLOCK_50,      // clock he thong 50 MHz
+    input  wire  [3:0]  KEY,           // Phim ao active-low do lab1_signal_core tao
+                                       // (khong phai KEY vat ly tren board):
+                                       //   KEY[0]=freq_up, KEY[1]=freq_down
+                                       //   KEY[2]=amp_up,  KEY[3]=amp_down
+    input  wire         rst_n,         // reset active-low (system_ready)
+    input  wire         sample_en,     // xung 48 kHz tu CODEC (sample_tick)
+    output wire [31:0]  phase_inc_out, // dung chung cho Square/Triangle/Sawtooth
+    output wire [7:0]   amp_ctrl_out,  // dung chung cho Square/Triangle/Sawtooth
     output wire signed [23:0] sine_data_out
 );
 
