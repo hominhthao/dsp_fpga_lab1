@@ -107,7 +107,50 @@ module tb_ecg_gen;
         .ecg_data  (ecg_data_core)
     );
 
-    assign sample_en_core = 1'b1;
+    // Independent reference: use only TB inputs and reference LUT.
+    // The accepted phase is evaluated before incrementing. Its result appears
+    // on ecg_data one rising CLOCK_50 edge after the accepting edge.
+    // With sample_en continuously high, live DUT phase is two steps ahead.
+    logic [31:0] ref_phase;
+    logic [31:0] ref_pending_phase, ref_output_phase;
+    logic signed [23:0] ref_pending_data, ref_output_data;
+    bit ref_pending_valid;
+
+    function automatic logic signed [23:0] reference_ecg(input logic [31:0] p);
+        integer a_idx, b_idx;
+        longint signed a, b, fraction, result;
+        begin
+            a_idx = p[31:24];
+            b_idx = (a_idx + 1) % N_LUT;
+            a = $signed(ref_lut[a_idx]);
+            b = $signed(ref_lut[b_idx]);
+            fraction = p[23:16];
+            result = a + (((b - a) * fraction) >>> 8);
+            reference_ecg = result[23:0];
+        end
+    endfunction
+
+    always @(posedge clk) begin
+        if (rst_core) begin
+            ref_phase = 0;
+            ref_pending_phase = 0;
+            ref_output_phase = 0;
+            ref_pending_data = 0;
+            ref_output_data = 0;
+            ref_pending_valid = 0;
+        end else begin
+            if (ref_pending_valid) begin
+                ref_output_data = ref_pending_data;
+                ref_output_phase = ref_pending_phase;
+            end
+            if (sample_en_core) begin
+                ref_pending_data = reference_ecg(ref_phase);
+                ref_pending_phase = ref_phase;
+                ref_phase = ref_phase + phase_inc_core;
+            end
+            ref_pending_valid = sample_en_core;
+        end
+    end
 
     task automatic reset_core;
         begin
@@ -272,18 +315,14 @@ module tb_ecg_gen;
     // Full waveform bit-check.
     //
     // Dung phase_inc=2^24 de phase[31:24] tang 1 moi sample_en.
-    // TB so ecg_data voi LUT theo address. Cho phep pipeline 1 mau neu
-    // output cua ecg_gen dang la thanh ghi.
+    // Fixed latency check; no accepting alternate LUT addresses.
     //-------------------------------------------------------------------------
     task automatic check_full_lut_waveform;
         integer i;
-        integer signed actual_now;
-        integer signed actual_prev;
-        integer signed expected_now;
-        integer signed expected_prev;
         integer addr;
         integer mismatches;
         integer first_bad;
+        bit [255:0] seen;
         begin
             wave_case = 6;
             wave_active = 0;
@@ -293,54 +332,91 @@ module tb_ecg_gen;
             $display("CASE C06: Full LUT waveform self-check");
 
             phase_inc_core = 32'd16_777_216; // 2^24
+            sample_en_core = 1'b1;
             reset_core();
 
             mismatches = 0;
             first_bad = -1;
-            actual_prev = 0;
+            seen = '0;
 
-            // Skip dau pipeline sample.
+            // Sample at negedge: DUT nonblocking updates have settled.
             for (i = 0; i < N_LUT; i++) begin
                 wave_sample = i;
                 @(negedge clk);
 
-                addr = u_core.phase[31:24];
-
-                // Kiem tra theo address hien tai va address truoc do.
-                actual_now = $signed(ecg_data_core);
-
-                if (addr >= 0 && addr < N_LUT) begin
-                    expected_now = $signed(ref_lut[addr]);
-
-                    if (actual_now != expected_now) begin
-                        // Neu ecg_data bi tre 1 sample, thu so voi
-                        // address - 1 truoc khi ket luan FAIL.
-                        if (addr > 0)
-                            expected_prev = $signed(ref_lut[addr-1]);
-                        else
-                            expected_prev = $signed(ref_lut[N_LUT-1]);
-
-                        if (actual_now != expected_prev) begin
-                            mismatches++;
-                            if (first_bad < 0)
-                                first_bad = addr;
-                        end
-                    end
+                addr = ref_output_phase[31:24];
+                seen[addr] = 1'b1;
+                if ((ecg_data_core !== ref_output_data) ||
+                    (u_core.phase !== ref_phase)) begin
+                    mismatches++;
+                    if (first_bad < 0) first_bad = addr;
+                    if (mismatches <= 8)
+                        $display("[MISMATCH] addr=%0d actual=%0d expected=%0d phase=%h ref_phase=%h",
+                                 addr, $signed(ecg_data_core), $signed(ref_output_data),
+                                 u_core.phase, ref_phase);
                 end
-
-                actual_prev = actual_now;
             end
 
             $display("[DO ] checked %0d LUT addresses", N_LUT);
             $display("[DO ] waveform mismatches=%0d", mismatches);
 
             report_check(
-                mismatches == 0,
+                (mismatches == 0) && (&seen),
                 "C06 / Full ECG LUT waveform",
-                "toan bo 256 mau khop LUT (cho phep pipeline 1 sample)",
-                $sformatf("mismatches=%0d, first_bad_addr=%0d",
-                          mismatches, first_bad)
+                "256 addresses matched: exact pipeline latency, including wrap",
+                $sformatf("mismatches=%0d, first_bad_addr=%0d, coverage=%h",
+                          mismatches, first_bad, seen)
             );
+        end
+    endtask
+
+    // Fractional phases, negative slopes, LUT wrap and sparse sample_en.
+    // Check every clock, including held output and the pending output on the
+    // first disabled clock. 64-bit signed math avoids reference overflow.
+    task automatic check_interpolation_case(
+        input integer case_no,
+        input logic [31:0] increment,
+        input bit sparse
+    );
+        integer i, errors, fractional_samples, wrap_samples;
+        logic [31:0] last_output_phase;
+        begin
+            wave_case = case_no;
+            sample_en_core = 1;
+            phase_inc_core = increment;
+            reset_core();
+            errors = 0;
+            fractional_samples = 0;
+            wrap_samples = 0;
+            last_output_phase = ref_output_phase;
+            $display("CASE C%0d: interpolation / phase_inc=%h / sparse=%0d",
+                     case_no, increment, sparse);
+            for (i = 0; i < 4096; i++) begin
+                // Inputs change only on falling edges, stable at posedge.
+                sample_en_core = !sparse || ((i % 7) == 0) || ((i % 7) == 1);
+                @(negedge clk);
+                if ((ecg_data_core !== ref_output_data) ||
+                    (u_core.phase !== ref_phase)) begin
+                    errors++;
+                    if (errors <= 8)
+                        $display("[MISMATCH] cycle=%0d en=%b phase=%h actual=%0d expected=%0d",
+                                 i, sample_en_core, ref_output_phase,
+                                 $signed(ecg_data_core), $signed(ref_output_data));
+                end
+                if (ref_output_phase != last_output_phase) begin
+                    if (ref_output_phase[23:16] != 0) fractional_samples++;
+                    if (ref_output_phase[31:24] == 255) wrap_samples++;
+                end
+                last_output_phase = ref_output_phase;
+            end
+            $display("[DO ] checked 4096 clocks; mismatches=%0d fractional=%0d addr255=%0d",
+                     errors, fractional_samples, wrap_samples);
+            report_check((errors == 0) && (fractional_samples > 0) && (wrap_samples > 0),
+                $sformatf("C%0d / interpolation and pipeline", case_no),
+                "bit-exact reference; phase, latency and output hold checked",
+                $sformatf("mismatches=%0d fractional=%0d addr255=%0d",
+                          errors, fractional_samples, wrap_samples));
+            sample_en_core = 1;
         end
     endtask
 
@@ -765,6 +841,7 @@ endtask
         fail_count = 0;
 
         rst_core = 1'b0;
+        sample_en_core = 1'b1;
         phase_inc_core = PHASE_INC_DEFAULT;
         rst_top = 1'b1;
         KEY = 4'b1111;
@@ -822,6 +899,10 @@ endtask
         check_full_lut_waveform();
         check_waveform_shape();
         check_reset_midcycle();
+
+        check_interpolation_case(16, 32'h0080_0000, 0);
+        check_interpolation_case(17, 32'h0123_4567, 0);
+        check_interpolation_case(18, 32'h0123_4567, 1);
 
         //=====================================================================
         // AMP SCALER
